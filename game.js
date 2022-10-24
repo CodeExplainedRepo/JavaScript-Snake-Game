@@ -1,3 +1,8 @@
+/*
+  Check out my channel
+  const channel = '@CodeExplained';
+  const url = `www.youtube.com/${channel}`;
+*/
 // select elements
 const scoreEl = document.querySelector('.score');
 const highScoreEl = document.querySelector('.high-score');
@@ -8,173 +13,33 @@ const playAgainBtn = document.querySelector('.play-again');
 const cvs = document.getElementById('cvs');
 const ctx = cvs.getContext('2d');
 
-// add border to cvs element
-cvs.style.border = '1px solid #FFF';
+// add a border to cvs
+cvs.style.border = '1px solid #fff';
 
-// dimensions
+// cvs dimensions
 const width = cvs.width,
   height = cvs.height;
 
-// Square
-const squareSize = 20;
-const horizontalSq = width / squareSize;
-const verticalSq = height / squareSize;
-
-// game colors
-const headColor = '#FFF',
-  bodyColor = '#999',
-  boardColor = '#000',
-  foodColor = '#F95700FF';
-
-// game
-let FPS = 1000 / 15;
+// game vars
+const FPS = 1000 / 15;
 let gameLoop;
+const squareSize = 20;
 let gameStarted = false;
 
-// current direction
-let directionsQueue = [];
+// game colors
+let boardColor = '#000000',
+  headColor = '#FFF',
+  bodyColor = '#999';
+
+// direction
 let currentDirection = '';
-const direction = {
-  LEFT: 'ArrowLeft',
+let directionsQueue = [];
+const directions = {
   RIGHT: 'ArrowRight',
+  LEFT: 'ArrowLeft',
   UP: 'ArrowUp',
   DOWN: 'ArrowDown',
 };
-
-// listen to user's key up
-document.addEventListener('keyup', setDirection);
-function setDirection(e) {
-  const newDirection = e.key;
-  const oldDirection = currentDirection;
-
-  if (
-    (newDirection === direction.LEFT &&
-      oldDirection !== direction.RIGHT) ||
-    (newDirection === direction.RIGHT &&
-      oldDirection !== direction.LEFT) ||
-    (newDirection === direction.UP &&
-      oldDirection !== direction.DOWN) ||
-    (newDirection === direction.DOWN && oldDirection !== direction.UP)
-  ) {
-    if (!gameStarted) {
-      gameLoop = setInterval(frame, FPS);
-      gameStarted = true;
-    }
-    directionsQueue.push(newDirection);
-  }
-}
-
-// snake
-let snake = [
-  { x: 2, y: 0 },
-  { x: 1, y: 0 },
-  { x: 0, y: 0 },
-];
-function drawSnake() {
-  snake.forEach((tile, i) => {
-    const color = i === 0 ? headColor : bodyColor;
-    drawSquare(tile.x, tile.y, color);
-  });
-}
-function moveSnake() {
-  // check if game not yet started
-  if (!gameStarted) return;
-
-  const head = { ...snake[0] };
-
-  if (directionsQueue.length) {
-    currentDirection = directionsQueue.shift();
-  }
-
-  switch (currentDirection) {
-    case direction.LEFT:
-      head.x -= 1;
-      break;
-    case direction.RIGHT:
-      head.x += 1;
-      break;
-    case direction.UP:
-      head.y -= 1;
-      break;
-    case direction.DOWN:
-      head.y += 1;
-      break;
-  }
-
-  if (hasEatenFood()) {
-    food = createFood();
-  } else {
-    snake.pop();
-  }
-
-  snake.unshift(head);
-}
-function hasEatenFood() {
-  const head = snake[0];
-  return food.x === head.x && food.y === head.y;
-}
-function hitWall() {
-  const head = snake[0];
-  return (
-    head.x >= horizontalSq ||
-    head.x < 0 ||
-    head.y >= verticalSq ||
-    head.y < 0
-  );
-}
-function hitSelf() {
-  const snakeBody = [...snake];
-  const head = snakeBody.shift();
-
-  return snakeBody.some(
-    (tile) => tile.x === head.x && tile.y === head.y
-  );
-}
-
-// score
-const initialSnakeLength = snake.length;
-let score = 0;
-let highScore = localStorage.getItem('high-score') || 0;
-
-function renderScore() {
-  score = snake.length - initialSnakeLength;
-  scoreEl.innerHTML = `⭐ ${score}`;
-  highScoreEl.innerHTML = `🏆 ${highScore}`;
-}
-
-// food
-let food = createFood();
-function createFood() {
-  let food = {
-    x: Math.floor(Math.random() * horizontalSq),
-    y: Math.floor(Math.random() * verticalSq),
-  };
-
-  while (
-    snake.some((tile) => tile.x === food.x && tile.y === food.y)
-  ) {
-    food = {
-      x: Math.floor(Math.random() * horizontalSq),
-      y: Math.floor(Math.random() * verticalSq),
-    };
-  }
-
-  return food;
-}
-function drawFood() {
-  drawSquare(food.x, food.y, foodColor);
-}
-
-// draw square
-function drawSquare(x, y, color) {
-  const sq = squareSize;
-
-  ctx.fillStyle = color;
-  ctx.fillRect(x * sq, y * sq, sq, sq);
-
-  ctx.strokeStyle = boardColor;
-  ctx.strokeRect(x * sq, y * sq, sq, sq);
-}
 
 // draw board
 function drawBoard() {
@@ -182,24 +47,188 @@ function drawBoard() {
   ctx.fillRect(0, 0, width, height);
 }
 
-// game loop
+// draw square
+function drawSquare(x, y, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(
+    x * squareSize,
+    y * squareSize,
+    squareSize,
+    squareSize
+  );
+
+  ctx.srokeStyle = boardColor;
+  ctx.strokeRect(
+    x * squareSize,
+    y * squareSize,
+    squareSize,
+    squareSize
+  );
+}
+
+// snake
+let snake = [
+  { x: 2, y: 0 }, // Head
+  { x: 1, y: 0 }, // Body
+  { x: 0, y: 0 }, // Tail
+];
+function drawSnake() {
+  snake.forEach((square, index) => {
+    const color = index === 0 ? headColor : bodyColor;
+    drawSquare(square.x, square.y, color);
+  });
+}
+function moveSnake() {
+  if (!gameStarted) return;
+
+  // get head position
+  const head = { ...snake[0] };
+
+  // consume the directions
+  if (directionsQueue.length) {
+    currentDirection = directionsQueue.shift();
+  }
+
+  // change head postion
+  switch (currentDirection) {
+    case directions.RIGHT:
+      head.x += 1;
+      break;
+    case directions.LEFT:
+      head.x -= 1;
+      break;
+    case directions.UP:
+      head.y -= 1;
+      break;
+    case directions.DOWN:
+      head.y += 1;
+      break;
+  }
+
+  if (hasEatenFood()) {
+    food = createFood();
+  } else {
+    // remove tail
+    snake.pop();
+  }
+
+  // unshift new head
+  snake.unshift(head);
+}
+function hasEatenFood() {
+  const head = snake[0];
+  return head.x === food.x && head.y === food.y;
+}
+
+// keyup event lisenter
+document.addEventListener('keyup', setDirection);
+function setDirection(event) {
+  const newDirection = event.key;
+  const oldDirection = currentDirection;
+
+  if (
+    (newDirection === directions.LEFT &&
+      oldDirection !== directions.RIGHT) ||
+    (newDirection === directions.RIGHT &&
+      oldDirection !== directions.LEFT) ||
+    (newDirection === directions.UP &&
+      oldDirection !== directions.DOWN) ||
+    (newDirection === directions.DOWN &&
+      oldDirection !== directions.UP)
+  ) {
+    if (!gameStarted) {
+      gameStarted = true;
+      gameLoop = setInterval(frame, FPS);
+    }
+    directionsQueue.push(newDirection);
+  }
+}
+
+// number of vertical/horizontal squares
+const horizontalSq = width / squareSize; // 400/20 => 20
+const verticalSq = height / squareSize; // 400/20 => 20
+
+// food
+let food = createFood(); // { x : 5, y : 6 }
+function createFood() {
+  let food = {
+    x: Math.floor(Math.random() * horizontalSq),
+    y: Math.floor(Math.random() * verticalSq),
+  };
+
+  while (
+    snake.some((square) => square.x === food.x && square.y === food.y)
+  ) {
+    food = {
+      x: Math.floor(Math.random() * horizontalSq),
+      y: Math.floor(Math.random() * verticalSq),
+    };
+  }
+  return food;
+}
+function drawFood() {
+  drawSquare(food.x, food.y, '#F95700');
+}
+
+// score
+const initialSnakeLength = snake.length; // 3
+let score = 0;
+let highScore = localStorage.getItem('high-score') || 0;
+function renderScore() {
+  score = snake.length - initialSnakeLength;
+  scoreEl.innerHTML = `⭐ ${score}`;
+  highScoreEl.innerHTML = `🏆 ${highScore}`;
+}
+
+// hit wall
+function hitWall() {
+  const head = snake[0];
+
+  return (
+    head.x < 0 ||
+    head.x >= horizontalSq ||
+    head.y < 0 ||
+    head.y >= verticalSq
+  );
+}
+
+// hit self
+function hitSelf() {
+  const snakeBody = [...snake];
+  const head = snakeBody.shift();
+
+  return snakeBody.some(
+    (square) => square.x === head.x && square.y === head.y
+  );
+}
+
+// game over
+function gameOver() {
+  // select score and high score el
+  const scoreEl = document.querySelector('.game-over-score .current');
+  const highScoreEl = document.querySelector(
+    '.game-over-score .high'
+  );
+
+  // calculate the high score
+  highScore = Math.max(score, highScore);
+  localStorage.setItem('high-score', highScore);
+
+  // update the score and high score el
+  scoreEl.innerHTML = `⭐ ${score}`;
+  highScoreEl.innerHTML = `🏆 ${highScore}`;
+
+  // show game over el
+  gameOverEl.classList.remove('hide');
+}
+
+// loop
 function frame() {
-  // draw board
   drawBoard();
-
-  // draw food
   drawFood();
-
-  // move Snake
   moveSnake();
-
-  // draw snake
   drawSnake();
-
-  // render score
   renderScore();
-
-  // check for game over
   if (hitWall() || hitSelf()) {
     clearInterval(gameLoop);
     gameOver();
@@ -207,50 +236,26 @@ function frame() {
 }
 frame();
 
-// GAME OVER
-function gameOver() {
-  // select elements
-  const scoreEl = gameOverEl.querySelector(
-    '.game-over-score .current'
-  );
-  const highScoreEl = gameOverEl.querySelector(
-    '.game-over-score .high'
-  );
-
-  // update score
-  scoreEl.innerHTML = `⭐ ${score}`;
-
-  // update high score
-  highScore = Math.max(highScore, score);
-  localStorage.setItem('high-score', highScore);
-  highScoreEl.innerHTML = `🏆 ${highScore}`;
-
-  // show game over screen
-  gameOverEl.classList.remove('hide');
-}
-
-// restart game
+// restart the game
 playAgainBtn.addEventListener('click', restartGame);
 function restartGame() {
-  // reset direction to no direction
-  currentDirection = '';
-
-  // clear the directions queue
-  directionsQueue = [];
-
-  // reset the snake size and position
+  // reset snake length and position
   snake = [
-    { x: 2, y: 0 },
-    { x: 1, y: 0 },
-    { x: 0, y: 0 },
+    { x: 2, y: 0 }, // Head
+    { x: 1, y: 0 }, // Body
+    { x: 0, y: 0 }, // Tail
   ];
 
-  // hide game over screen
+  // reset directions
+  currentDirection = '';
+  directionsQueue = [];
+
+  // hide the game over screen
   gameOverEl.classList.add('hide');
 
-  // gameStarted
+  // reset the gameStarted state to false
   gameStarted = false;
 
-  // restart game
+  // re-draw everything
   frame();
 }
