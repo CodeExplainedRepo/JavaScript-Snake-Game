@@ -57,7 +57,7 @@ function drawSquare(x, y, color) {
     squareSize
   );
 
-  ctx.srokeStyle = boardColor;
+  ctx.strokeStyle = boardColor;
   ctx.strokeRect(
     x * squareSize,
     y * squareSize,
